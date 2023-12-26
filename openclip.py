@@ -2,6 +2,7 @@ from io import BytesIO
 import base64
 import concurrent.futures
 import logging
+import torch
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -34,9 +35,9 @@ class OpenCLIPEmbeddings:
     @staticmethod
     def _load_model(model_name: str, checkpoint: str):
         try:
-            # Load model
+            device = "cuda" if torch.cuda.is_available() else "cpu"
             model, _, preprocess = open_clip.create_model_and_transforms(
-                model_name=model_name, pretrained=checkpoint
+                model_name=model_name, pretrained=checkpoint, device=device
             )
             tokenizer = open_clip.get_tokenizer(model_name)
             return model, preprocess, tokenizer
