@@ -24,7 +24,7 @@ def handler(event, context):
         if 'base64_images' in event:
             base64_images = list(event['base64_images'])
             logger.info('Embedding base64 images')
-            embeddings = clip_embeddings.embed_base64(base64_images)
+            embeddings = clip_embeddings.embed_base64s(base64_images)
         elif 'texts' in event:
             texts = list(event['texts'])
             logger.info('Embedding documents')
