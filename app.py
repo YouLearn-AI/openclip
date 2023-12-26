@@ -28,11 +28,7 @@ def handler(event, context):
         elif 'texts' in event:
             texts = list(event['texts'])
             logger.info('Embedding documents')
-            embeddings = clip_embeddings.embed_documents(texts)
-        elif 'query' in event:
-            query = str(event['query'])
-            logger.info('Embedding query')
-            embeddings = clip_embeddings.embed_query(query)
+            embeddings = clip_embeddings.embed_texts(texts)
 
         return {
             'headers': {'Content-Type': 'application/json'},

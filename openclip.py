@@ -49,7 +49,7 @@ class OpenCLIPEmbeddings:
                 "pip install open_clip_torch torch"
             )
 
-    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+    def embed_texts(self, texts: list[str]) -> list[list[float]]:
         logger.info('Embedding documents')
         with concurrent.futures.ThreadPoolExecutor() as executor:
             text_features = list(executor.map(self._embed_single_text, texts))

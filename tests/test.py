@@ -4,9 +4,9 @@ import time
 
 openclip = OpenCLIPEmbeddings()
 # Embedding text
-text = "A photo of a cat."
+texts = ["A photo of a cat."]
 start_time_text = time.time()
-text_features = openclip.embed_documents([text])
+text_features = openclip.embed_texts(texts)
 end_time_text = time.time()
 print("Text embedding time:", end_time_text - start_time_text, "seconds")
 # print(text_features)
