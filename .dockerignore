@@ -9,3 +9,4 @@ temp
 Dockerfile*
 *.md
 tests/
+images/
