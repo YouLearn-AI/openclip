@@ -1,6 +1,5 @@
 from io import BytesIO
 import base64
-from functools import lru_cache
 import concurrent.futures
 import logging
 
@@ -33,7 +32,6 @@ class OpenCLIPEmbeddings:
         return cls._instances[key]
     
     @staticmethod
-    @lru_cache(maxsize=32)
     def _load_model(model_name: str, checkpoint: str):
         try:
             # Load model
@@ -67,48 +65,41 @@ class OpenCLIPEmbeddings:
             base64_features = list(executor.map(self._embed_single_base64, base64_strings))
         return base64_features
 
-    @lru_cache(maxsize=512)
     def _embed_single_text(self, text) -> list[float]:
         logger.info('Embedding single text')
         embeddings_tensor = self._get_embedding_text(text)
         embeddings_list = self._normalize_tensor(embeddings_tensor)
         return embeddings_list
     
-    @lru_cache(maxsize=512)
     def _embed_single_base64(self, base64_str):
         logger.info('Embedding single base64')
         image_data = self._decode_base64(base64_str)
         embeddings_list = self._embed_single_image(image_data)
         return embeddings_list
 
-    @lru_cache(maxsize=512)
     def _embed_single_image(self, image_data):
         logger.info('Embedding single image')
         embeddings_tensor = self._get_embedding_image(image_data)
         embeddings_list = self._normalize_tensor(embeddings_tensor)
         return embeddings_list
     
-    @lru_cache(maxsize=512)
     def _decode_base64(self, base64_str: str) -> BytesIO:
         logger.info('Decoding base64')
         image_bytes = base64.b64decode(base64_str)
         return BytesIO(image_bytes)
     
-    @lru_cache(maxsize=512)
     def _get_embedding_text(self, text: str):
         logger.info('Getting text embedding')
         tokenized_text = self.tokenizer(text)
         embeddings_tensor = self.model.encode_text(tokenized_text)
         return embeddings_tensor
     
-    @lru_cache(maxsize=512)
     def _get_embedding_image(self, image_data: str):
         logger.info('Getting image embedding')
         pil_image = Image.open(image_data)
         preprocessed_image = self.preprocess(pil_image).unsqueeze(0)
         return self.model.encode_image(preprocessed_image)
     
-    @lru_cache(maxsize=512)
     def _normalize_tensor(self, tensor) -> list[float]:
         logger.info('Normalizing tensor')
         norm = tensor.norm(p=2, dim=1, keepdim=True)
