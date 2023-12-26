@@ -1,0 +1,11 @@
+.git*
+.vscode
+__pycache__
+*.pyc
+venv
+.env
+tmp
+temp
+Dockerfile*
+*.md
+tests/
