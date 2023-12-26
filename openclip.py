@@ -38,7 +38,7 @@ class OpenCLIPEmbeddings:
             device = "cuda" if torch.cuda.is_available() else "cpu"
             cache_dir = "/mnt/openclip_cache"
             model, _, preprocess = open_clip.create_model_and_transforms(
-                model_name=model_name, pretrained=checkpoint, device=device, cache_dir=cache_dir
+                model_name=model_name, pretrained=checkpoint, device=device, cache_dir=cache_dir, local_files_only=False,
             )
             tokenizer = open_clip.get_tokenizer(model_name)
             return model, preprocess, tokenizer
