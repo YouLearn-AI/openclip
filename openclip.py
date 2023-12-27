@@ -33,7 +33,7 @@ class OpenCLIPEmbeddings:
         try:
             # Load model
             model, _, preprocess = open_clip.create_model_and_transforms(
-                model_name=model_name, pretrained=checkpoint, device="cuda" if torch.cuda.is_available() else "cpu"
+                model_name=model_name, pretrained=checkpoint, cache_dir="./model", device="cuda" if torch.cuda.is_available() else "cpu"
             )
             tokenizer = open_clip.get_tokenizer(model_name)
             return model, preprocess, tokenizer
