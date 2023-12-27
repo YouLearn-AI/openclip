@@ -36,7 +36,7 @@ class OpenCLIPEmbeddings:
     def _load_model(model_name: str, checkpoint: str):
         try:
             device = "cuda" if torch.cuda.is_available() else "cpu"
-            cache_dir = "/mnt/openclip_cache"
+            cache_dir = "./model"
             model, _, preprocess = open_clip.create_model_and_transforms(
                 model_name=model_name, pretrained=checkpoint, device=device, cache_dir=cache_dir,
             )
