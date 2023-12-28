@@ -4,7 +4,7 @@ import time
 
 openclip = OpenCLIPEmbeddings()
 # Embedding text
-texts = ["A photo of a cat."]
+texts = ["hi", "hello"]
 start_time_text = time.time()
 text_features = openclip.embed_texts(texts)
 end_time_text = time.time()
