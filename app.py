@@ -3,7 +3,7 @@ from openclip import OpenCLIPEmbeddings
 
 def handler(event, context):
     
-    event = json.loads(event.get('body', event))
+    event = json.loads(event.get('body', str(event)))
 
     if not ('base64_images' in event or 'texts' in event):
         return {
