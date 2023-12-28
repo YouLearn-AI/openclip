@@ -25,7 +25,6 @@ def handler(event, context):
             'headers': {'Content-Type': 'application/json'},
             'statusCode': 200,
             'body': json.dumps({'embeddings': embeddings}),
-            'event': event,
         }
     except Exception as e:
         return {
