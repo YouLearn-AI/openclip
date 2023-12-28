@@ -8,7 +8,6 @@ def handler(event, context):
             'headers': {'Content-Type': 'application/json'},
             'statusCode': 400,
             'body': json.dumps({'error': 'No valid data provided in the event'}),
-            'event': event,
         }
     
     clip_embeddings = OpenCLIPEmbeddings()
@@ -31,5 +30,4 @@ def handler(event, context):
             'headers': {'Content-Type': 'application/json'},
             'statusCode': 500,
             'body': json.dumps({'error': 'Error during embedding: {}'.format(e)}),
-            'event': event,
         }
