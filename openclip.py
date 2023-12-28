@@ -1,5 +1,6 @@
 from io import BytesIO
 import base64
+import concurrent.futures
 import torch
 
 try:
@@ -16,7 +17,6 @@ class OpenCLIPEmbeddings:
     model : open_clip.model.CLIP
     preprocess : torchvision.transforms.transforms.Compose
     tokenizer : open_clip.tokenizer.SimpleTokenizer
-    device = "cuda" if torch.cuda.is_available() else "cpu"
 
     def __new__(cls, model_name="ViT-B-32", checkpoint="laion2b_s34b_b79k"):
         key = (model_name, checkpoint)
@@ -31,9 +31,10 @@ class OpenCLIPEmbeddings:
     @staticmethod
     def _load_model(model_name: str, checkpoint: str):
         try:
-            # Load model
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            cache_dir = "./model"
             model, _, preprocess = open_clip.create_model_and_transforms(
-                model_name=model_name, pretrained=checkpoint, cache_dir="./model", device="cuda" if torch.cuda.is_available() else "cpu"
+                model_name=model_name, pretrained=checkpoint, device=device, cache_dir=cache_dir,
             )
             tokenizer = open_clip.get_tokenizer(model_name)
             return model, preprocess, tokenizer
@@ -45,26 +46,51 @@ class OpenCLIPEmbeddings:
             )
 
     def embed_texts(self, texts: list[str]) -> list[list[float]]:
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            text_features = list(executor.map(self._embed_single_text, texts))
+        return text_features
+
+    def embed_images(self, uris: list[str]) -> list[list[float]]:
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            image_features = list(executor.map(self._embed_single_image, uris))
+        return image_features
+
+    def embed_base64s(self, base64_strings: list[str]) -> list[list[float]]:
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            base64_features = list(executor.map(self._embed_single_base64, base64_strings))
+        return base64_features
+
+    def _embed_single_text(self, text) -> list[float]:
         with torch.inference_mode():
-                tokens = self.tokenizer(texts).to(self.device)
-                text_features = self.model.encode_text(tokens).float()
-                text_features /= text_features.norm(dim=-1, keepdim=True)
-                return text_features.tolist()
-
-    def embed_images(self, uris: list[str]) -> torch.Tensor:
-
-        # Convert base64 strings to PIL images
-        images = [Image.open(BytesIO(base64.b64decode(uri))) for uri in uris]
-
-        # Preprocess images and convert to tensors
-        processed_images = [self.preprocess(image).unsqueeze(0).to(self.device) for image in images]
-
-        # Concatenate all images into a single batch
-        image_tensor = torch.cat(processed_images, dim=0)
-
-        # Generate embeddings
+            embeddings_tensor = self._get_embedding_text(text)
+            embeddings_list = self._normalize_tensor(embeddings_tensor)
+        return embeddings_list
+    
+    def _embed_single_image(self, image_data):
         with torch.inference_mode():
-            image_features = self.model.encode_image(image_tensor).float()
-            image_features /= image_features.norm(dim=-1, keepdim=True)
-
-            return image_features.tolist()
+            embeddings_tensor = self._get_embedding_image(image_data)
+            embeddings_list = self._normalize_tensor(embeddings_tensor)
+        return embeddings_list
+    
+    def _embed_single_base64(self, base64_str):
+        image_data = self._decode_base64(base64_str)
+        embeddings_list = self._embed_single_image(image_data)
+        return embeddings_list
+    
+    def _decode_base64(self, base64_str: str) -> BytesIO:
+        image_bytes = base64.b64decode(base64_str)
+        return BytesIO(image_bytes)
+    
+    def _get_embedding_text(self, text: str):
+        tokenized_text = self.tokenizer(text)
+        embeddings_tensor = self.model.encode_text(tokenized_text)
+        return embeddings_tensor
+    
+    def _get_embedding_image(self, image_data: str):
+        pil_image = Image.open(image_data)
+        preprocessed_image = self.preprocess(pil_image).unsqueeze(0)
+        return self.model.encode_image(preprocessed_image)
+    
+    def _normalize_tensor(self, tensor) -> list[float]:
+        tensor /= tensor.norm(dim=-1, keepdim=True)
+        return tensor.squeeze(0).tolist()
