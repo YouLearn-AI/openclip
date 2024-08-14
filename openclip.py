@@ -8,15 +8,17 @@ try:
     from PIL import Image
     import torchvision
 except ImportError as e:
-    print(f"Required libraries are missing: {e}. Install them before using this class.")
+    print(
+        f"Required libraries are missing: {e}. Install them before using this class.")
+
 
 class OpenCLIPEmbeddings:
     _instances = {}
     model_name: str
     checkpoint: str
-    model : open_clip.model.CLIP
-    preprocess : torchvision.transforms.transforms.Compose
-    tokenizer : open_clip.tokenizer.SimpleTokenizer
+    model: open_clip.model.CLIP
+    preprocess: torchvision.transforms.transforms.Compose
+    tokenizer: open_clip.tokenizer.SimpleTokenizer
 
     def __new__(cls, model_name="ViT-B-32", checkpoint="laion2b_s34b_b79k"):
         key = (model_name, checkpoint)
@@ -24,15 +26,16 @@ class OpenCLIPEmbeddings:
             instance = super(OpenCLIPEmbeddings, cls).__new__(cls)
             instance.model_name = model_name
             instance.checkpoint = checkpoint
-            instance.model, instance.preprocess, instance.tokenizer = instance._load_model(model_name, checkpoint)
+            instance.model, instance.preprocess, instance.tokenizer = instance._load_model(
+                model_name, checkpoint)
             cls._instances[key] = instance
         return cls._instances[key]
-    
+
     @staticmethod
     def _load_model(model_name: str, checkpoint: str):
         try:
             device = "cuda" if torch.cuda.is_available() else "cpu"
-            cache_dir = "./model"
+            cache_dir = "/tmp"
             model, _, preprocess = open_clip.create_model_and_transforms(
                 model_name=model_name, pretrained=checkpoint, device=device, cache_dir=cache_dir,
             )
@@ -57,7 +60,8 @@ class OpenCLIPEmbeddings:
 
     def embed_base64s(self, base64_strings: list[str]) -> list[list[float]]:
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            base64_features = list(executor.map(self._embed_single_base64, base64_strings))
+            base64_features = list(executor.map(
+                self._embed_single_base64, base64_strings))
         return base64_features
 
     def _embed_single_text(self, text) -> list[float]:
@@ -65,32 +69,32 @@ class OpenCLIPEmbeddings:
             embeddings_tensor = self._get_embedding_text(text)
             embeddings_list = self._normalize_tensor(embeddings_tensor)
         return embeddings_list
-    
+
     def _embed_single_image(self, image_data):
         with torch.inference_mode():
             embeddings_tensor = self._get_embedding_image(image_data)
             embeddings_list = self._normalize_tensor(embeddings_tensor)
         return embeddings_list
-    
+
     def _embed_single_base64(self, base64_str):
         image_data = self._decode_base64(base64_str)
         embeddings_list = self._embed_single_image(image_data)
         return embeddings_list
-    
+
     def _decode_base64(self, base64_str: str) -> BytesIO:
         image_bytes = base64.b64decode(base64_str)
         return BytesIO(image_bytes)
-    
+
     def _get_embedding_text(self, text: str):
         tokenized_text = self.tokenizer(text)
         embeddings_tensor = self.model.encode_text(tokenized_text)
         return embeddings_tensor
-    
+
     def _get_embedding_image(self, image_data: str):
         pil_image = Image.open(image_data)
         preprocessed_image = self.preprocess(pil_image).unsqueeze(0)
         return self.model.encode_image(preprocessed_image)
-    
+
     def _normalize_tensor(self, tensor) -> list[float]:
         tensor /= tensor.norm(dim=-1, keepdim=True)
         return tensor.squeeze(0).tolist()
